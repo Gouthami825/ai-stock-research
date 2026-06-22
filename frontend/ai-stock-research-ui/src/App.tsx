@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 
+const BACKEND = "https://ai-stock-research-kfay.onrender.com";
+
 const STEPS = [
   "Fetching stock data...",
   "Analyzing key metrics...",
@@ -15,10 +17,11 @@ function App() {
   const [error, setError] = useState("");
   const [tab, setTab] = useState<"analyze" | "history">("analyze");
   const [reports, setReports] = useState<string[]>([]);
+  const [waking, setWaking] = useState(false);
 
   const fetchReports = async () => {
     try {
-      const res = await fetch("https://ai-stock-research-kfay.onrender.com/reports");
+      const res = await fetch(`${BACKEND}/reports`);
       const data = await res.json();
       setReports(data.reports);
     } catch (e) {
@@ -33,16 +36,20 @@ function App() {
   const analyze = async () => {
     if (!stock) return;
     setLoading(true);
+    setWaking(true);
     setResult(null);
     setError("");
     setStep(0);
 
     const interval = setInterval(() => {
       setStep((s) => (s < STEPS.length - 1 ? s + 1 : s));
-    }, 3000);
+    }, 4000);
 
     try {
-      const res = await fetch("https://ai-stock-research-kfay.onrender.com/reports");
+      const res = await fetch(
+        `${BACKEND}/analyze?stock=${stock.toUpperCase()}.NS`
+      );
+      setWaking(false);
       const data = await res.json();
       clearInterval(interval);
       if (data.status === "success") {
@@ -52,7 +59,8 @@ function App() {
       }
     } catch (e) {
       clearInterval(interval);
-      setError("Could not connect to backend.");
+      setWaking(false);
+      setError("Could not connect to backend. Please try again.");
     }
     setLoading(false);
   };
@@ -84,13 +92,11 @@ function App() {
 
   return (
     <div style={styles.page}>
-      {/* Header */}
       <div style={styles.header}>
         <h1 style={styles.logo}>⚡ StockMind AI</h1>
         <p style={styles.tagline}>AI-Powered Stock Research — Indian Markets</p>
       </div>
 
-      {/* Tabs */}
       <div style={styles.tabs}>
         <button
           style={{ ...styles.tab, ...(tab === "analyze" ? styles.tabActive : {}) }}
@@ -106,13 +112,12 @@ function App() {
         </button>
       </div>
 
-      {/* Analyze Tab */}
       {tab === "analyze" && (
         <>
           <div style={styles.searchBox}>
             <input
               style={styles.input}
-              placeholder="Enter NSE stock symbol (e.g. INFY, RELIANCE, TCS)"
+              placeholder="Enter NSE symbol (e.g. INFY, TCS, RELIANCE)"
               value={stock}
               onChange={(e) => setStock(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && analyze()}
@@ -121,6 +126,12 @@ function App() {
               {loading ? "Analyzing..." : "Analyze →"}
             </button>
           </div>
+
+          {waking && (
+            <div style={styles.wakingBox}>
+              ⏳ Waking up the server — this takes about 30 seconds on the first request. Please wait...
+            </div>
+          )}
 
           {loading && (
             <div style={styles.stepsBox}>
@@ -186,7 +197,6 @@ function App() {
         </>
       )}
 
-      {/* History Tab */}
       {tab === "history" && (
         <div style={{ maxWidth: 700, margin: "0 auto" }}>
           <button
@@ -258,7 +268,7 @@ const styles: { [key: string]: React.CSSProperties } = {
     display: "flex",
     gap: 12,
     maxWidth: 700,
-    margin: "0 auto 40px",
+    margin: "0 auto 20px",
   },
   input: {
     flex: 1,
@@ -279,6 +289,16 @@ const styles: { [key: string]: React.CSSProperties } = {
     fontWeight: 700,
     fontSize: 16,
     cursor: "pointer",
+  },
+  wakingBox: {
+    maxWidth: 700,
+    margin: "0 auto 20px",
+    background: "#1a1a0f",
+    color: "#ffcc44",
+    padding: 16,
+    borderRadius: 10,
+    fontSize: 14,
+    border: "1px solid #ffcc4433",
   },
   stepsBox: {
     maxWidth: 700,
