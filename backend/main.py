@@ -6,8 +6,12 @@ import json
 import os
 from datetime import datetime
 from dotenv import load_dotenv
+from pathlib import Path
 
-load_dotenv()
+env_path = Path(__file__).resolve().parent / ".env"
+load_dotenv(dotenv_path=env_path)
+
+print("DEBUG - Loaded key:", os.getenv('GROQ_API_KEY'))
 
 app = FastAPI()
 
@@ -24,7 +28,7 @@ os.makedirs("logs", exist_ok=True)
 def write_log(message: str):
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     log_line = f"[{timestamp}] {message}\n"
-    with open("logs/activity.log", "a") as f:
+    with open("logs/activity.log", "a", encoding="utf-8") as f:
         f.write(log_line)
     print(log_line.strip())
 
@@ -80,6 +84,7 @@ Be concise and professional."""
         timeout=30
     )
     result = response.json()
+    write_log(f"GROQ RAW RESPONSE: {result}")
     report = result["choices"][0]["message"]["content"]
     write_log(f"LLM report generated successfully")
     return report
@@ -119,3 +124,7 @@ def analyze(stock: str):
 def list_reports():
     files = os.listdir("reports")
     return {"reports": sorted(files, reverse=True)}
+
+
+
+

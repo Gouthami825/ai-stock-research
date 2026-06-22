@@ -18,7 +18,7 @@ function App() {
 
   const fetchReports = async () => {
     try {
-      const res = await fetch("http://127.0.0.1:8000/reports");
+      const res = await fetch("https://ai-stock-research-kfay.onrender.com/reports");
       const data = await res.json();
       setReports(data.reports);
     } catch (e) {
@@ -42,9 +42,7 @@ function App() {
     }, 3000);
 
     try {
-      const res = await fetch(
-        `http://127.0.0.1:8000/analyze?stock=${stock.toUpperCase()}.NS`
-      );
+      const res = await fetch("https://ai-stock-research-kfay.onrender.com/reports");
       const data = await res.json();
       clearInterval(interval);
       if (data.status === "success") {
