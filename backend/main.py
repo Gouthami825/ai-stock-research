@@ -34,21 +34,29 @@ def write_log(message: str):
 
 def fetch_stock_data(symbol: str):
     write_log(f"Fetching stock data for {symbol}...")
-    ticker = yf.Ticker(symbol)
-    info = ticker.info
+    base = symbol.replace(".NS", "") + ".BSE"
+    av_key = os.getenv("ALPHA_VANTAGE_KEY")
+    
+    overview = requests.get(
+        f"https://www.alphavantage.co/query?function=OVERVIEW&symbol={symbol.replace('.NS','')}.BSE&apikey={av_key}"
+    ).json()
+    
+    quote = requests.get(
+        f"https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol={symbol.replace('.NS','')}.BSE&apikey={av_key}"
+    ).json().get("Global Quote", {})
+
     data = {
-        "name": info.get("longName", symbol),
-        "price": info.get("currentPrice", "N/A"),
-        "52w_high": info.get("fiftyTwoWeekHigh", "N/A"),
-        "52w_low": info.get("fiftyTwoWeekLow", "N/A"),
-        "pe_ratio": info.get("trailingPE", "N/A"),
-        "market_cap": info.get("marketCap", "N/A"),
-        "sector": info.get("sector", "N/A"),
-        "summary": info.get("longBusinessSummary", "N/A")[:300],
+        "name": overview.get("Name", symbol),
+        "price": quote.get("05. price", "N/A"),
+        "52w_high": quote.get("03. high", "N/A"),
+        "52w_low": quote.get("04. low", "N/A"),
+        "pe_ratio": overview.get("PERatio", "N/A"),
+        "market_cap": overview.get("MarketCapitalization", "N/A"),
+        "sector": overview.get("Sector", "N/A"),
+        "summary": overview.get("Description", "N/A")[:300],
     }
     write_log(f"Stock data fetched successfully for {data['name']}")
     return data
-
 def generate_report(stock_data: dict):
     write_log(f"Sending data to LLM for analysis...")
     prompt = f"""You are a professional financial research analyst for Indian markets.
